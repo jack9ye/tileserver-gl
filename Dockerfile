@@ -17,10 +17,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY . /usr/src/app
-
+COPY ./package.json /usr/src/app/
 ENV NODE_ENV="production"
+RUN cd /usr/src/app && npm install --production
 
+COPY . /usr/src/app
+ENV NODE_ENV="production"
 RUN cd /usr/src/app && npm install --production
 
 

@@ -6,11 +6,18 @@ const fs = require('fs');
 const clone = require('clone');
 const glyphCompose = require('@mapbox/glyph-pbf-composite');
 
-
-module.exports.getPublicUrl = (publicUrl, req) => publicUrl || `${req.protocol}://${req.headers.host}/`;
+const getPublicUrl = (publicUrl, req) => {
+  if (publicUrl && publicUrl.startsWith('http')) return publicUrl;
+  const protocol = req.headers['X-Forwarded-Proto'] || req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['X-Forwarded-Host'] || req.headers['x-forwarded-host'] || req.headers.host;
+  let path = publicUrl ? publicUrl : '/';
+  if (!path.startsWith('/')) path = '/' + path;
+  if (!path.endsWith('/')) path = path + '/';
+  return `${protocol}://${host}${path}`;
+};
+module.exports.getPublicUrl = getPublicUrl;
 
 module.exports.getTileUrls = (req, domains, path, format, publicUrl, aliases) => {
-
   if (domains) {
     if (domains.constructor === String && domains.length > 0) {
       domains = domains.split(',');
@@ -57,6 +64,7 @@ module.exports.getTileUrls = (req, domains, path, format, publicUrl, aliases) =>
       uris.push(`${req.protocol}://${domain}/${path}/{z}/{x}/{y}.${format}${query}`);
     }
   } else {
+    publicUrl = getPublicUrl(publicUrl, req);
     uris.push(`${publicUrl}${path}/{z}/{x}/{y}.${format}${query}`)
   }
 
