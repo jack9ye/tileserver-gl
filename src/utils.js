@@ -8,13 +8,22 @@ const glyphCompose = require('@mapbox/glyph-pbf-composite');
 
 const getPublicUrl = (publicUrl, req) => {
   if (publicUrl && publicUrl.startsWith('http')) return publicUrl;
+
   const protocol = req.headers['X-Forwarded-Proto'] || req.headers['x-forwarded-proto'] || req.protocol;
-  const host = req.headers['X-Forwarded-Host'] || req.headers['x-forwarded-host'] || req.headers.host;
+
+  // express v4 bug, using self-implementing hostname
+  // host will contain port, but forwarded header will not
+  let host = req.headers['X-Forwarded-Host'] || req.headers['x-forwarded-host'] || req.headers.host;
+  const portIndexInHost = host.indexOf(':');
+  if (portIndexInHost > 0) host = host.substring(0, portIndexInHost);
+
   let port = (req.headers['X-Forwarded-Port'] || req.headers['x-forwarded-port'] || req.socket.localPort) + '';
   port = port === '80' || port === '443' ? '' : ':' + port;
+
   let path = publicUrl ? publicUrl : '/';
   if (!path.startsWith('/')) path = '/' + path;
   if (!path.endsWith('/')) path = path + '/';
+
   return `${protocol}://${host}${port}${path}`;
 };
 module.exports.getPublicUrl = getPublicUrl;
